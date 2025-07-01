@@ -5,7 +5,6 @@ Esta é uma API Java Spring Boot para acessar e provas e questões do ENEM (Exam
 ## Funcionalidades
 - Fornece endpoints para acessar detalhes e questões do ENEM por ano
 
-
 ## Primeiros Passos
 
 ### Pré-requisitos
@@ -26,6 +25,12 @@ A API estará disponível em `http://localhost:8080` por padrão.
 - `/api/exams` – Lista os exames disponíveis
 - `/api/exams/{year}` – Detalhes de um ano específico
 - `/api/exams/{year}/questions` – Questões de um ano específico
+
+## Documentação Swagger
+
+Após iniciar a aplicação, acesse:
+
+- `http://localhost:8080/swagger-ui.html`
 
 ## Configuração
 - Edite `src/main/resources/application.properties` para alterar configurações do servidor ou outras opções.
