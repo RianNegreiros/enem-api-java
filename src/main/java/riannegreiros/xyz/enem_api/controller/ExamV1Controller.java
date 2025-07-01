@@ -4,10 +4,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import riannegreiros.xyz.enem_api.dto.*;
 import riannegreiros.xyz.enem_api.service.ExamService;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.web.client.RestTemplate;
-
 import java.util.List;
 
 @RestController
@@ -78,14 +74,5 @@ public class ExamV1Controller {
         } catch (Exception e) {
             return ResponseEntity.notFound().build();
         }
-    }
-
-    @GetMapping("")
-    public ResponseEntity<String> openApiDocs() {
-        RestTemplate restTemplate = new RestTemplate();
-        String docs = restTemplate.getForObject("http://localhost:8080/v3/api-docs", String.class);
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .body(docs);
     }
 }
