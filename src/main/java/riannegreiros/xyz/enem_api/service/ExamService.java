@@ -19,12 +19,12 @@ public class ExamService {
 
     public List<ExamDto> getExams() {
         try (InputStream is = new ClassPathResource("static/exams.json").getInputStream()) {
-            List<Map<String, Object>> exams = objectMapper.readValue(is, new TypeReference<>() {
-            });
+            List<ExamListItemDto> exams = objectMapper.readValue(is,
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, ExamListItemDto.class));
             List<ExamDto> result = new ArrayList<>();
-            for (Map<String, Object> exam : exams) {
-                int year = (int) exam.get("year");
-                String title = (String) exam.get("title");
+            for (ExamListItemDto exam : exams) {
+                int year = exam.getYear();
+                String title = exam.getTitle();
                 result.add(new ExamDto(year, title));
             }
             return result;
@@ -36,32 +36,26 @@ public class ExamService {
     public ExamDetailDto getExamDetails(int year) {
         String path = String.format("static/%d/details.json", year);
         try (InputStream is = new ClassPathResource(path).getInputStream()) {
-            Map<String, Object> details = objectMapper.readValue(is, new TypeReference<>() {
-            });
-            String title = (String) details.get("title");
+            ExamDetailsDto details = objectMapper.readValue(is, ExamDetailsDto.class);
+            String title = details.getTitle();
             List<ExamDetailDto.LanguageDto> languages = new ArrayList<>();
-            List<?> langsRaw = (List<?>) details.get("languages");
-            for (Object l : langsRaw) {
-                Map<String, String> langMap = objectMapper.convertValue(l, new TypeReference<>() {
-                });
-                languages.add(new ExamDetailDto.LanguageDto(langMap.get("name"), langMap.get("value")));
+            if (details.getLanguages() != null) {
+                for (ExamDetailsDto.LanguageDto lang : details.getLanguages()) {
+                    languages.add(new ExamDetailDto.LanguageDto(lang.getName(), lang.getValue()));
+                }
             }
             List<ExamDetailDto.DisciplineDto> disciplines = new ArrayList<>();
-            List<?> discsRaw = (List<?>) details.get("disciplines");
-            for (Object d : discsRaw) {
-                Map<String, String> discMap = objectMapper.convertValue(d, new TypeReference<>() {
-                });
-                disciplines.add(new ExamDetailDto.DisciplineDto(discMap.get("name"), discMap.get("value")));
+            if (details.getDisciplines() != null) {
+                for (ExamDetailsDto.DisciplineDto disc : details.getDisciplines()) {
+                    disciplines.add(new ExamDetailDto.DisciplineDto(disc.getName(), disc.getValue()));
+                }
             }
             List<ExamDetailDto.QuestionSummaryDto> questions = new ArrayList<>();
-            List<?> qsRaw = (List<?>) details.get("questions");
-            for (Object q : qsRaw) {
-                Map<String, Object> qMap = objectMapper.convertValue(q, new TypeReference<>() {
-                });
-                int idx = (int) qMap.get("index");
-                String disc = (String) qMap.get("discipline");
-                String lang = (String) qMap.get("language");
-                questions.add(new ExamDetailDto.QuestionSummaryDto(idx, disc, lang));
+            if (details.getQuestions() != null) {
+                for (ExamDetailsDto.QuestionSummaryDto q : details.getQuestions()) {
+                    questions.add(
+                            new ExamDetailDto.QuestionSummaryDto(q.getIndex(), q.getDiscipline(), q.getLanguage()));
+                }
             }
             return new ExamDetailDto(year, title, languages, disciplines, questions);
         } catch (IOException e) {
@@ -83,22 +77,20 @@ public class ExamService {
             for (String qDir : questionDirs) {
                 String qPath = basePath + qDir + "/details.json";
                 try (InputStream is = new ClassPathResource(qPath).getInputStream()) {
-                    Map<String, Object> q = objectMapper.readValue(is, new TypeReference<>() {
-                    });
-                    String qLang = (String) q.get("language");
-                    String qDisc = (String) q.get("discipline");
+                    QuestionDetailsDto q = objectMapper.readValue(is, QuestionDetailsDto.class);
+                    String qLang = q.getLanguage();
+                    String qDisc = q.getDiscipline();
                     if ((language == null || language.equals(qLang))
                             && (discipline == null || discipline.equals(qDisc))) {
-                        int idx = (int) q.get("index");
-                        String text = (String) q.getOrDefault("text", (String) q.get("context"));
+                        int idx = q.getIndex();
+                        String text = q.getContext();
                         Map<String, String> options = new java.util.HashMap<>();
-                        if (q.containsKey("alternatives")) {
-                            List<Map<String, Object>> alternatives = (List<Map<String, Object>>) q.get("alternatives");
-                            for (Map<String, Object> alt : alternatives) {
-                                options.put((String) alt.get("letter"), (String) alt.get("text"));
+                        if (q.getAlternatives() != null) {
+                            for (QuestionDetailsDto.Alternative alt : q.getAlternatives()) {
+                                options.put(alt.getLetter(), alt.getText());
                             }
                         }
-                        String answer = (String) q.getOrDefault("answer", q.get("correctAlternative"));
+                        String answer = q.getCorrectAlternative();
                         allQuestions.add(new QuestionDetailDto(idx, text, options, answer, qDisc, qLang));
                     }
                 } catch (IOException ignore) {
@@ -131,22 +123,20 @@ public class ExamService {
         }
         for (String path : tryPaths) {
             try (InputStream is = new ClassPathResource(path).getInputStream()) {
-                Map<String, Object> q = objectMapper.readValue(is, new TypeReference<>() {
-                });
-                String qLang = (String) q.get("language");
+                QuestionDetailsDto q = objectMapper.readValue(is, QuestionDetailsDto.class);
+                String qLang = q.getLanguage();
                 if (language != null && !language.equals(qLang)) {
                     continue;
                 }
-                String text = (String) q.getOrDefault("text", (String) q.get("context"));
+                String text = q.getContext();
                 Map<String, String> options = new java.util.HashMap<>();
-                if (q.containsKey("alternatives")) {
-                    List<Map<String, Object>> alternatives = (List<Map<String, Object>>) q.get("alternatives");
-                    for (Map<String, Object> alt : alternatives) {
-                        options.put((String) alt.get("letter"), (String) alt.get("text"));
+                if (q.getAlternatives() != null) {
+                    for (QuestionDetailsDto.Alternative alt : q.getAlternatives()) {
+                        options.put(alt.getLetter(), alt.getText());
                     }
                 }
-                String answer = (String) q.getOrDefault("answer", q.get("correctAlternative"));
-                String discipline = (String) q.get("discipline");
+                String answer = q.getCorrectAlternative();
+                String discipline = q.getDiscipline();
                 return new QuestionDetailDto(index, text, options, answer, discipline, qLang);
             } catch (IOException ignore) {
                 // Try next path
