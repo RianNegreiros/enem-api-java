@@ -118,8 +118,12 @@ public class ExamV1ControllerTest {
     @Test
     void getQuestion_returnsOk() throws Exception {
 
-        QuestionDetailDto question = new QuestionDetailDto(1, "text", Collections.emptyMap(),
-                "A", "discipline", "language");
+        QuestionDetailsDto question = new QuestionDetailsDto();
+        question.setIndex(1);
+        question.setContext("text");
+        question.setCorrectAlternative("A");
+        question.setDiscipline("discipline");
+        question.setLanguage("language");
         when(examService.getQuestion(eq(2020), eq(1), any())).thenReturn(question);
 
         mockMvc.perform(get("/api/v1/exams/2020/questions/1"))
