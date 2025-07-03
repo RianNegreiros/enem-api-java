@@ -65,7 +65,7 @@ public class ExamV1Controller {
     }
 
     @GetMapping("/exams/{year}/questions/{index}")
-    public ResponseEntity<QuestionDetailDto> getQuestion(
+    public ResponseEntity<QuestionDetailsDto> getQuestion(
             @PathVariable int year,
             @PathVariable int index,
             @RequestParam(required = false) String language) {

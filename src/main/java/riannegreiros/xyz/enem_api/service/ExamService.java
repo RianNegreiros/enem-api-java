@@ -9,12 +9,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class ExamService {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
+
+    public ExamService(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     public List<ExamDto> getExams() {
         try (InputStream is = new ClassPathResource("static/exams.json").getInputStream()) {
@@ -65,7 +68,7 @@ public class ExamService {
     public QuestionsResponseDto getQuestions(int year, Integer limit, Integer offset,
             String language, String discipline) {
         limit = Math.min(limit, 50);
-        List<QuestionDetailDto> allQuestions = new ArrayList<>();
+        List<QuestionDetailsDto> allQuestions = new ArrayList<>();
         int total = 0;
         String basePath = String.format("static/%d/questions/", year);
         try {
@@ -81,23 +84,14 @@ public class ExamService {
                     String qDisc = q.getDiscipline();
                     if ((language == null || language.equals(qLang))
                             && (discipline == null || discipline.equals(qDisc))) {
-                        int idx = q.getIndex();
-                        String text = q.getContext();
-                        Map<String, String> options = new java.util.HashMap<>();
-                        if (q.getAlternatives() != null) {
-                            for (QuestionDetailsDto.Alternative alt : q.getAlternatives()) {
-                                options.put(alt.getLetter(), alt.getText());
-                            }
-                        }
-                        String answer = q.getCorrectAlternative();
-                        allQuestions.add(new QuestionDetailDto(idx, text, options, answer, qDisc, qLang));
+                        allQuestions.add(q);
                     }
                 } catch (IOException ignore) {
                 }
             }
             total = allQuestions.size();
             int toIndex = Math.min(offset + limit, total);
-            List<QuestionDetailDto> paged = (offset < total) ? allQuestions.subList(offset, toIndex) : List.of();
+            List<QuestionDetailsDto> paged = (offset < total) ? allQuestions.subList(offset, toIndex) : List.of();
             var metadata = new QuestionsResponseDto.MetadataDto(limit, offset, total);
             return new QuestionsResponseDto(metadata, paged);
         } catch (IOException e) {
@@ -105,7 +99,7 @@ public class ExamService {
         }
     }
 
-    public QuestionDetailDto getQuestion(int year, int index, String language) {
+    public QuestionDetailsDto getQuestion(int year, int index, String language) {
         String basePath = String.format("static/%d/questions/", year);
         String[] tryPaths;
         if (language != null) {
@@ -127,16 +121,7 @@ public class ExamService {
                 if (language != null && !language.equals(qLang)) {
                     continue;
                 }
-                String text = q.getContext();
-                Map<String, String> options = new java.util.HashMap<>();
-                if (q.getAlternatives() != null) {
-                    for (QuestionDetailsDto.Alternative alt : q.getAlternatives()) {
-                        options.put(alt.getLetter(), alt.getText());
-                    }
-                }
-                String answer = q.getCorrectAlternative();
-                String discipline = q.getDiscipline();
-                return new QuestionDetailDto(index, text, options, answer, discipline, qLang);
+                return q;
             } catch (IOException ignore) {
                 // Try next path
             }
@@ -148,7 +133,7 @@ public class ExamService {
     public QuestionsResponseDto getQuestionsByIndices(int year, List<Integer> indices,
             Integer limit, Integer offset, String language) {
         limit = Math.min(limit, 50);
-        List<QuestionDetailDto> questions = new ArrayList<>();
+        List<QuestionDetailsDto> questions = new ArrayList<>();
         for (Integer idx : indices) {
             try {
                 questions.add(getQuestion(year, idx, language));
@@ -157,7 +142,7 @@ public class ExamService {
         }
         int total = questions.size();
         int toIndex = Math.min(offset + limit, total);
-        List<QuestionDetailDto> paged = (offset < total) ? questions.subList(offset, toIndex) : List.of();
+        List<QuestionDetailsDto> paged = (offset < total) ? questions.subList(offset, toIndex) : List.of();
         var metadata = new QuestionsResponseDto.MetadataDto(limit, offset, total);
         return new QuestionsResponseDto(metadata, paged);
     }

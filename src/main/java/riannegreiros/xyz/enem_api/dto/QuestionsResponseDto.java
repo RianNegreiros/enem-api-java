@@ -4,9 +4,9 @@ import java.util.List;
 
 public class QuestionsResponseDto {
     private MetadataDto metadata;
-    private List<QuestionDetailDto> questions;
+    private List<QuestionDetailsDto> questions;
 
-    public QuestionsResponseDto(MetadataDto metadata, List<QuestionDetailDto> questions) {
+    public QuestionsResponseDto(MetadataDto metadata, List<QuestionDetailsDto> questions) {
         this.metadata = metadata;
         this.questions = questions;
     }
@@ -15,7 +15,7 @@ public class QuestionsResponseDto {
         return metadata;
     }
 
-    public List<QuestionDetailDto> getQuestions() {
+    public List<QuestionDetailsDto> getQuestions() {
         return questions;
     }
 
