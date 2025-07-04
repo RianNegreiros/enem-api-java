@@ -1,6 +1,8 @@
 package riannegreiros.xyz.enem_api.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import riannegreiros.xyz.enem_api.dto.*;
@@ -13,6 +15,8 @@ import java.util.List;
 @Service
 public class ExamService {
 
+    private static final Logger logger = LoggerFactory.getLogger(ExamService.class);
+
     private final ObjectMapper objectMapper;
 
     public ExamService(ObjectMapper objectMapper) {
@@ -20,6 +24,7 @@ public class ExamService {
     }
 
     public List<ExamDto> getExams() {
+        logger.debug("Fetching all exams");
         try (InputStream is = new ClassPathResource("static/exams.json").getInputStream()) {
             List<ExamListItemDto> exams = objectMapper.readValue(is,
                     objectMapper.getTypeFactory().constructCollectionType(List.class, ExamListItemDto.class));
@@ -31,11 +36,13 @@ public class ExamService {
             }
             return result;
         } catch (IOException e) {
+            logger.error("Failed to read exams.json: {}", e.getMessage());
             throw new RuntimeException("Failed to read exams.json", e);
         }
     }
 
     public ExamDetailDto getExamDetails(int year) {
+        logger.debug("Fetching exam details for year {}", year);
         String path = String.format("static/%d/details.json", year);
         try (InputStream is = new ClassPathResource(path).getInputStream()) {
             ExamDetailsDto details = objectMapper.readValue(is, ExamDetailsDto.class);
@@ -61,12 +68,15 @@ public class ExamService {
             }
             return new ExamDetailDto(year, title, languages, disciplines, questions);
         } catch (IOException e) {
+            logger.error("Exam details not found for year {}: {}", year, e.getMessage());
             throw new RuntimeException("Exam details not found for year: " + year, e);
         }
     }
 
     public QuestionsResponseDto getQuestions(int year, Integer limit, Integer offset,
             String language, String discipline) {
+        logger.debug("Fetching questions for year {}, limit={}, offset={}, language={}, discipline={}", year, limit,
+                offset, language, discipline);
         limit = Math.min(limit, 50);
         List<QuestionDetailsDto> allQuestions = new ArrayList<>();
         int total = 0;
@@ -95,11 +105,13 @@ public class ExamService {
             var metadata = new QuestionsResponseDto.MetadataDto(limit, offset, total);
             return new QuestionsResponseDto(metadata, paged);
         } catch (IOException e) {
+            logger.error("Failed to read questions for year {}: {}", year, e.getMessage());
             throw new RuntimeException("Failed to read questions for year: " + year, e);
         }
     }
 
     public QuestionDetailsDto getQuestion(int year, int index, String language) {
+        logger.debug("Fetching question for year {}, index={}, language={}", year, index, language);
         String basePath = String.format("static/%d/questions/", year);
         String[] tryPaths;
         if (language != null) {
@@ -126,12 +138,15 @@ public class ExamService {
                 // Try next path
             }
         }
+        logger.error("Question not found for year {}, index={}, language={}", year, index, language);
         throw new RuntimeException("Question not found for year: " + year + ", index: " + index
                 + (language != null ? ", language: " + language : ""));
     }
 
     public QuestionsResponseDto getQuestionsByIndices(int year, List<Integer> indices,
             Integer limit, Integer offset, String language) {
+        logger.debug("Fetching questions by indices for year {}, indices={}, limit={}, offset={}, language={}", year,
+                indices, limit, offset, language);
         limit = Math.min(limit, 50);
         List<QuestionDetailsDto> questions = new ArrayList<>();
         for (Integer idx : indices) {
